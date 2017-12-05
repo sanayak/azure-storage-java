@@ -51,11 +51,14 @@ import static org.junit.Assert.*;
 public class TableQueryTests {
 
     private static CloudTable table;
+    private static TableRequestOptions tableRequestOptions ;
 
     @BeforeClass
-    public static void setup() throws URISyntaxException, StorageException {
+    public static void setup() throws URISyntaxException, StorageException, InterruptedException {
         table = TableTestHelper.getRandomTableReference();
-        table.createIfNotExists();
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+        table.createIfNotExists(tableRequestOptions, null);
 
         // Insert 500 entities in Batches to query
         for (int i = 0; i < 5; i++) {
@@ -73,7 +76,7 @@ public class TableQueryTests {
 
     @AfterClass
     public static void teardown() throws StorageException {
-        table.deleteIfExists();
+        table.deleteIfExists(tableRequestOptions, null);
     }
 
     @Test

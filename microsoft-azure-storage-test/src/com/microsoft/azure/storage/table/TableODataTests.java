@@ -33,11 +33,14 @@ public class TableODataTests {
     DynamicTableEntity ent;
 
     private CloudTable table;
+    private TableRequestOptions tableRequestOptions;
 
     @Before
-    public void tableODataTestsBeforeMethod() throws StorageException, URISyntaxException {
+    public void tableODataTestsBeforeMethod() throws StorageException, URISyntaxException, InterruptedException {
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
         this.table = TableTestHelper.getRandomTableReference();
-        this.table.createIfNotExists();
+        this.table.createIfNotExists(tableRequestOptions, null);
 
         final CloudTableClient tClient = TableTestHelper.createCloudTableClient();
         this.options = TableRequestOptions.populateAndApplyDefaults(this.options, tClient);
@@ -58,7 +61,7 @@ public class TableODataTests {
     @After
     public void tableODataTestsAfterMethod() throws StorageException {
         this.table.execute(TableOperation.delete(this.ent), this.options, null);
-        this.table.deleteIfExists();
+        this.table.deleteIfExists(tableRequestOptions, null);
     }
 
     @Test

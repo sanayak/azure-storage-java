@@ -28,17 +28,10 @@ import java.util.UUID;
 import javax.crypto.BadPaddingException;
 import javax.crypto.NoSuchPaddingException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import com.microsoft.azure.storage.*;
+import org.junit.*;
 
 import com.microsoft.azure.keyvault.extensions.SymmetricKey;
-import com.microsoft.azure.storage.Constants;
-import com.microsoft.azure.storage.DictionaryKeyResolver;
-import com.microsoft.azure.storage.ResultContinuation;
-import com.microsoft.azure.storage.ResultSegment;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.TestHelper;
 import com.microsoft.azure.storage.core.SR;
 import com.microsoft.azure.storage.table.TableRequestOptions.EncryptionResolver;
 import com.microsoft.azure.storage.table.TableRequestOptions.PropertyResolver;
@@ -48,17 +41,20 @@ import com.microsoft.azure.storage.table.TableTestHelper.ComplexEntity;
 import com.sun.jersey.core.util.Base64;
 
 public class TableEncryptionTests {
-    CloudTable table = null;
+    private CloudTable table;
+    private TableRequestOptions tableRequestOptions;
 
     @Before
-    public void tableTestMethodSetUp() throws URISyntaxException, StorageException {
+    public void tableTestMethodSetUp() throws URISyntaxException, StorageException, InterruptedException {
         this.table = TableTestHelper.getRandomTableReference();
-        this.table.createIfNotExists();
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+        this.table.createIfNotExists(tableRequestOptions, null);
     }
 
     @After
     public void tableTestMethodTearDown() throws StorageException {
-        this.table.deleteIfExists();
+        this.table.deleteIfExists(tableRequestOptions, null);
     }
 
     @Test
@@ -1043,6 +1039,7 @@ public class TableEncryptionTests {
         
         CloudTableClient tableClient = TableTestHelper.createCloudTableClient();
         CloudTable testTable = TableTestHelper.getRandomTableReference();
+        options.setRetryPolicyFactory( new RetryPolicyForServerSideThrottling());
         
         try
         {

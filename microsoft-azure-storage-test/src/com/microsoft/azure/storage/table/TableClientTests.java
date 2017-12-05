@@ -27,6 +27,9 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -50,6 +53,7 @@ import com.microsoft.azure.storage.core.PathUtility;
 import com.microsoft.azure.storage.core.SR;
 import com.microsoft.azure.storage.table.TableTestHelper.Class1;
 import com.microsoft.azure.storage.table.TableTestHelper.Class2;
+import org.omg.PortableServer.THREAD_POLICY_ID;
 
 import static org.junit.Assert.*;
 
@@ -58,9 +62,18 @@ import static org.junit.Assert.*;
  */
 public class TableClientTests {
 
+    private static TableRequestOptions tableRequestOptions;
+
+    @BeforeClass
+    public static void testSetup() throws URISyntaxException, StorageException {
+        tableRequestOptions= new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+    }
+
+
     @Test
     @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
-    public void testListTablesSegmented() throws URISyntaxException, StorageException {
+    public void testListTablesSegmented() throws URISyntaxException, StorageException, InterruptedException {
         TableRequestOptions options = new TableRequestOptions();
         TablePayloadFormat[] formats =
                 {TablePayloadFormat.JsonFullMetadata,
@@ -73,7 +86,7 @@ public class TableClientTests {
         }
     }
 
-    private void testListTablesSegmented(TableRequestOptions options) throws URISyntaxException, StorageException {
+    private void testListTablesSegmented(TableRequestOptions options) throws URISyntaxException, StorageException, InterruptedException {
         final CloudTableClient tClient = TableTestHelper.createCloudTableClient();
         String tableBaseName = TableTestHelper.generateRandomTableName();
 
@@ -81,7 +94,7 @@ public class TableClientTests {
         for (int m = 0; m < 20; m++) {
             String name = String.format("%s%s", tableBaseName, new DecimalFormat("#0000").format(m));
             CloudTable table = tClient.getTableReference(name);
-            table.create();
+            table.create(tableRequestOptions, null);
             tables.add(name);
         }
 
@@ -141,7 +154,7 @@ public class TableClientTests {
 
     @Test
     @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
-    public void testListTablesSegmentedNoPrefix() throws URISyntaxException, StorageException {
+    public void testListTablesSegmentedNoPrefix() throws URISyntaxException, StorageException, InterruptedException {
         TableRequestOptions options = new TableRequestOptions();
         options.setTablePayloadFormat(TablePayloadFormat.Json);
 
@@ -152,7 +165,7 @@ public class TableClientTests {
         for (int m = 0; m < 20; m++) {
             String name = String.format("%s%s", tableBaseName, new DecimalFormat("#0000").format(m));
             CloudTable table = tClient.getTableReference(name);
-            table.create();
+            table.create(tableRequestOptions, null);
             tables.add(name);
         }
 
@@ -198,7 +211,7 @@ public class TableClientTests {
 
     @Test
     @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
-    public void testListTablesWithIterator() throws URISyntaxException, StorageException {
+    public void testListTablesWithIterator() throws URISyntaxException, StorageException, InterruptedException {
         TableRequestOptions options = new TableRequestOptions();
         options.setTablePayloadFormat(TablePayloadFormat.Json);
 
@@ -209,7 +222,7 @@ public class TableClientTests {
         for (int m = 0; m < 20; m++) {
             String name = String.format("%s%s", tableBaseName, new DecimalFormat("#0000").format(m));
             CloudTable table = tClient.getTableReference(name);
-            table.create();
+            table.create(tableRequestOptions, null);
             tables.add(name);
         }
 
@@ -264,7 +277,7 @@ public class TableClientTests {
             InterruptedException {
         CloudTable table = TableTestHelper.getRandomTableReference();
         try {
-            table.create();
+            table.create(tableRequestOptions, null);
 
             TablePermissions expectedPermissions = new TablePermissions();
             String identifier = UUID.randomUUID().toString();
@@ -384,10 +397,10 @@ public class TableClientTests {
 
     @Test
     @Category({ SlowTests.class, DevFabricTests.class, DevStoreTests.class, CloudTests.class })
-    public void testTableSASFromPermission() throws StorageException, URISyntaxException, InvalidKeyException {
+    public void testTableSASFromPermission() throws StorageException, URISyntaxException, InvalidKeyException, InterruptedException {
         CloudTable table = TableTestHelper.getRandomTableReference();
         try {
-            table.create();
+            table.create(tableRequestOptions, null);
 
             // Add a policy, check setting and getting.
             SharedAccessTablePolicy policy1 = new SharedAccessTablePolicy();
@@ -410,6 +423,7 @@ public class TableClientTests {
                     batch.insert(ent);
                 }
 
+                Thread.sleep(2000);
                 table.execute(batch);
             }
 
@@ -534,7 +548,7 @@ public class TableClientTests {
     public void testTableSASPkRk() throws StorageException, URISyntaxException, InvalidKeyException {
         CloudTable table = TableTestHelper.getRandomTableReference();
         try {
-            table.create();
+            table.create(tableRequestOptions, null);
 
             // Add a policy, check setting and getting.
             SharedAccessTablePolicy policy1 = new SharedAccessTablePolicy();

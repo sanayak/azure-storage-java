@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -53,6 +54,13 @@ import static org.junit.Assert.*;
 @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
 public class TableTests {
 
+    private TableRequestOptions tableRequestOptions;
+
+    @Before
+    public void tableTestMethodSetUp() throws InterruptedException {
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+    }
     /**
      * Tests name validation of tables.
      */
@@ -177,12 +185,12 @@ public class TableTests {
         CloudTable table = tClient.getTableReference(tableName);
         tClient.getDefaultRequestOptions().setTablePayloadFormat(TablePayloadFormat.Json);
         try {
-            table.create();
-            assertTrue(table.exists());
+            table.create(tableRequestOptions, null);
+            assertTrue(table.exists(tableRequestOptions, null));
 
             // Should fail as it already exists
             try {
-                table.create();
+                table.create(tableRequestOptions, null);
                 fail();
             }
             catch (StorageException ex) {
@@ -204,13 +212,13 @@ public class TableTests {
 
         CloudTable table = tClient.getTableReference(tableName);
         try {
-            assertTrue(table.createIfNotExists());
-            assertTrue(table.exists());
-            assertTrue(table.deleteIfExists());
+            assertTrue(table.createIfNotExists(tableRequestOptions, null));
+            assertTrue(table.exists(tableRequestOptions, null));
+            assertTrue(table.deleteIfExists(tableRequestOptions, null));
         }
         finally {
             // cleanup
-            table.deleteIfExists();
+            table.deleteIfExists(tableRequestOptions, null);
         }
     }
 
@@ -223,9 +231,9 @@ public class TableTests {
 
         CloudTable table = tClient.getTableReference(tableName);
         try {
-            assertTrue(table.createIfNotExists());
-            assertTrue(table.exists());
-            assertFalse(table.createIfNotExists());
+            assertTrue(table.createIfNotExists(tableRequestOptions, null));
+            assertTrue(table.exists(tableRequestOptions, null));
+            assertFalse(table.createIfNotExists(tableRequestOptions, null));
         }
         finally {
             // cleanup
@@ -240,11 +248,11 @@ public class TableTests {
         String tableName = TableTestHelper.generateRandomTableName();
 
         CloudTable table = tClient.getTableReference(tableName);
-        assertFalse(table.deleteIfExists());
+        assertFalse(table.deleteIfExists(tableRequestOptions, null));
 
-        table.create();
-        assertTrue(table.exists());
-        assertTrue(table.deleteIfExists());
+        table.create(tableRequestOptions, null);
+        assertTrue(table.exists(tableRequestOptions, null));
+        assertTrue(table.deleteIfExists(tableRequestOptions, null));
 
         assertFalse(table.deleteIfExists());
     }
@@ -254,7 +262,7 @@ public class TableTests {
         final CloudTable table = TableTestHelper.getRandomTableReference();
 
         try {
-            assertFalse(table.deleteIfExists());
+            assertFalse(table.deleteIfExists(tableRequestOptions, null));
             OperationContext ctx = new OperationContext();
             ctx.getSendingRequestEventHandler().addListener(new StorageEvent<SendingRequestEvent>() {
 
@@ -262,8 +270,8 @@ public class TableTests {
                 public void eventOccurred(SendingRequestEvent eventArg) {
                     if (((HttpURLConnection) eventArg.getConnectionObject()).getRequestMethod().equals("DELETE")) {
                         try {
-                            table.delete();
-                            assertFalse(table.exists());
+                            table.delete(tableRequestOptions, null);
+                            assertFalse(table.exists(tableRequestOptions, null));
                         }
                         catch (StorageException e) {
                             fail("Delete should succeed.");
@@ -272,10 +280,10 @@ public class TableTests {
                 }
             });
 
-            table.create();
+            table.create(tableRequestOptions, null);
 
             // The second delete of a table will return a 404
-            assertFalse(table.deleteIfExists(null, ctx));
+            assertFalse(table.deleteIfExists(tableRequestOptions, ctx));
         }
         finally {
             table.deleteIfExists();
@@ -295,20 +303,20 @@ public class TableTests {
         try {
             // Should fail as it doesnt already exists
             try {
-                table.delete();
+                table.delete(tableRequestOptions, null);
                 fail();
             }
             catch (StorageException ex) {
                 assertEquals(ex.getMessage(), "Not Found");
             }
 
-            table.create();
-            assertTrue(table.exists());
-            table.delete();
-            assertFalse(table.exists());
+            table.create(tableRequestOptions, null);
+            assertTrue(table.exists(tableRequestOptions, null));
+            table.delete(tableRequestOptions, null);
+            assertFalse(table.exists(tableRequestOptions, null));
         }
         finally {
-            table.deleteIfExists();
+            table.deleteIfExists(tableRequestOptions, null);
         }
     }
 
@@ -322,13 +330,13 @@ public class TableTests {
         CloudTable table = tClient.getTableReference(tableName);
 
         try {
-            assertFalse(table.exists());
-            assertTrue(table.createIfNotExists());
-            assertTrue(table.exists());
+            assertFalse(table.exists(tableRequestOptions, null));
+            assertTrue(table.createIfNotExists(tableRequestOptions, null));
+            assertTrue(table.exists(tableRequestOptions, null));
         }
         finally {
             // cleanup
-            table.deleteIfExists();
+            table.deleteIfExists(tableRequestOptions, null);
         }
     }
 
@@ -342,7 +350,7 @@ public class TableTests {
         String tableName = TableTestHelper.generateRandomTableName();
 
         CloudTable table = tClient.getTableReference(tableName);
-        table.create();
+        table.create(tableRequestOptions, null);
 
         TablePermissions expectedPermissions;
         TablePermissions testPermissions;
@@ -378,7 +386,7 @@ public class TableTests {
         }
         finally {
             // cleanup
-            table.deleteIfExists();
+            table.deleteIfExists(tableRequestOptions, null);
         }
     }
 
@@ -392,7 +400,7 @@ public class TableTests {
         // use capital letters to make sure SAS signature converts name to lower case correctly
         String name = "CAPS" + TableTestHelper.generateRandomTableName();
         CloudTable table = tClient.getTableReference(name);
-        table.create();
+        table.create(tableRequestOptions, null);
 
         TablePermissions expectedPermissions = new TablePermissions();
         String identifier = UUID.randomUUID().toString();

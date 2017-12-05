@@ -23,9 +23,7 @@ import com.microsoft.azure.storage.core.SR;
 import com.microsoft.azure.storage.table.TableTestHelper.Class1;
 import com.microsoft.azure.storage.table.TableTestHelper.Class2;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 
 import java.net.HttpURLConnection;
@@ -47,17 +45,20 @@ import static org.junit.Assert.*;
 @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
 public class TableBatchOperationTests {
 
-    private CloudTable table;
+    private static CloudTable table;
+    private static TableRequestOptions tableRequestOptions ;
 
-    @Before
-    public void tableTestMethodSetUp() throws URISyntaxException, StorageException {
-        this.table = TableTestHelper.getRandomTableReference();
-        this.table.createIfNotExists();
+    @BeforeClass
+    public static void testSetup() throws URISyntaxException, StorageException {
+        table = TableTestHelper.getRandomTableReference();
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+        table.createIfNotExists(tableRequestOptions, null);
     }
 
-    @After
-    public void tableTestMethodTearDown() throws StorageException {
-        this.table.deleteIfExists();
+    @AfterClass
+    public static void testClose() throws StorageException {
+        table.deleteIfExists(tableRequestOptions, null);
     }
 
     @Test
@@ -1143,15 +1144,15 @@ public class TableBatchOperationTests {
     }
 
     @Test
-    public void testInsertBatch100() throws StorageException {
+    public void testInsertBatch100() throws StorageException, InterruptedException {
         TableRequestOptions options = new TableRequestOptions();
 
         options.setTablePayloadFormat(TablePayloadFormat.JsonFullMetadata);
         insertAndDeleteBatchWithX(100, options);
-
+        Thread.sleep(2000);
         options.setTablePayloadFormat(TablePayloadFormat.Json);
         insertAndDeleteBatchWithX(100, options);
-
+        Thread.sleep(2000);
         options.setTablePayloadFormat(TablePayloadFormat.JsonNoMetadata);
         insertAndDeleteBatchWithX(100, options);
     }

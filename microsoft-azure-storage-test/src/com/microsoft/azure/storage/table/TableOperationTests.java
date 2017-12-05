@@ -21,9 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 
 import com.microsoft.azure.storage.StorageException;
@@ -46,18 +44,33 @@ import static org.junit.Assert.*;
 @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
 public class TableOperationTests {
 
-    private CloudTable table;
+    private static CloudTable table;
+    private static TableRequestOptions tableRequestOptions ;
 
-    @Before
-    public void tableTestMethodSetUp() throws URISyntaxException, StorageException {
+    @BeforeClass
+    public static void testSetup() throws URISyntaxException, StorageException {
+        table = TableTestHelper.getRandomTableReference();
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+        table.createIfNotExists(tableRequestOptions, null);
+    }
+
+    @AfterClass
+    public static void testClose() throws StorageException {
+        table.deleteIfExists(tableRequestOptions, null);
+    }
+
+  /*  @Before
+    public void tableTestMethodSetUp() throws URISyntaxException, StorageException, InterruptedException {
+        Thread.sleep(10000);
         this.table = TableTestHelper.getRandomTableReference();
         this.table.createIfNotExists();
     }
 
     @After
     public void tableTestMethodTearDown() throws StorageException {
-        this.table.deleteIfExists();
-    }
+        //this.table.deleteIfExists();
+    }*/
 
     @Test
     public void testPropertyCacheDisable() {

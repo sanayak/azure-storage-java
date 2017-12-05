@@ -19,9 +19,7 @@ import static org.junit.Assert.*;
 import java.net.URISyntaxException;
 import java.util.Date;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 
 import com.microsoft.azure.storage.StorageException;
@@ -35,17 +33,20 @@ import com.microsoft.azure.storage.TestRunners.DevStoreTests;
 @Category({ DevFabricTests.class, DevStoreTests.class, CloudTests.class })
 public class TableDateTests {
 
-    private CloudTable table;
+    private static CloudTable table;
+    private static TableRequestOptions tableRequestOptions ;
 
-    @Before
-    public void tableTestMethodSetUp() throws URISyntaxException, StorageException {
-        this.table = TableTestHelper.getRandomTableReference();
-        this.table.createIfNotExists();
+    @BeforeClass
+    public static void testSetup() throws URISyntaxException, StorageException {
+        table = TableTestHelper.getRandomTableReference();
+        tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(new RetryPolicyForServerSideThrottling());
+        table.createIfNotExists(tableRequestOptions, null);
     }
 
-    @After
-    public void tableTestMethodTearDown() throws StorageException {
-        this.table.deleteIfExists();
+    @AfterClass
+    public static void testClose() throws StorageException {
+        table.deleteIfExists(tableRequestOptions, null);
     }
 
     @Test
